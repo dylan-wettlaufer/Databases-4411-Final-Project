@@ -36,7 +36,6 @@ public class NoteEditorActivity extends AppCompatActivity {
         btnSave = findViewById(R.id.btnSave);
 
         Intent intent = getIntent();
-        Uri dataPacket = intent.getData();
         boolean name = intent.hasExtra("noteIdToCheck");
         int noteId = intent.getIntExtra("noteIdToCheck", -1);
 
