@@ -60,4 +60,6 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         loadNotes(); // Refresh list after returning from editor
     }
+
+
 }

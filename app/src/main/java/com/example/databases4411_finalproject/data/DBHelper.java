@@ -66,6 +66,31 @@ public class DBHelper extends SQLiteOpenHelper {
         db.close();
     }
 
+    public void updateNote(int id, String title, String content) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COL_TITLE, title);
+        values.put(COL_CONTENT, content);
+        db.update(TABLE_NAME, values, COL_ID + "=?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+    public Note getNoteById(int id) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_NAME, null, COL_ID + "=?",
+                new String[]{String.valueOf(id)}, null, null, null);
+
+        Note note = null;
+        if (cursor != null && cursor.moveToFirst()) {
+            int noteId = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID));
+            String title = cursor.getString(cursor.getColumnIndexOrThrow(COL_TITLE));
+            String content = cursor.getString(cursor.getColumnIndexOrThrow(COL_CONTENT));
+            note = new Note(noteId, title, content);
+            cursor.close();
+        }
+        db.close();
+        return note;
+    }
+
     public List<Note> getAllNotes() {
         List<Note> list = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();

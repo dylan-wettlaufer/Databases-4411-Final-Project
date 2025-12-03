@@ -2,6 +2,7 @@ package com.example.databases4411_finalproject;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -52,6 +53,12 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
                     .setNegativeButton("No", null)
                     .show();
             return true;
+        });
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(context, NoteEditorActivity.class);
+            intent.putExtra("noteIdToCheck", note.getId());
+            context.startActivity(intent);
+
         });
     }
 
