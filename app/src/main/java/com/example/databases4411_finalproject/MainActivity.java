@@ -2,8 +2,12 @@ package com.example.databases4411_finalproject;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -18,12 +22,15 @@ public class MainActivity extends AppCompatActivity {
 
     DBHelper dbHelper;
     RecyclerView recyclerView;
+    EditText etSearch;
+
     NoteAdapter adapter;
     Button btnAddNote;
     List<Note> notes; // Keep reference to the list
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -47,6 +54,30 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
+        etSearch = findViewById(R.id.etSearch);
+
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String q = s.toString().trim();
+
+                if (q.isEmpty()) {
+                    loadNotes(); // show all notes
+                } else {
+                    notes.clear();
+                    notes.addAll(dbHelper.searchNotes(q));
+                    adapter.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
     }
 
     private void loadNotes() {

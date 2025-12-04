@@ -112,4 +112,27 @@ public class DBHelper extends SQLiteOpenHelper {
         Log.d("DBHelper", "Returning " + list.size() + " notes");
         return list;
     }
+
+    public List<Note> searchNotes(String query) {
+        List<Note> notes = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Cursor cursor = db.rawQuery(
+                "SELECT * FROM notes WHERE title LIKE ? OR content LIKE ?",
+                new String[]{"%" + query + "%", "%" + query + "%"}
+        );
+
+        if (cursor.moveToFirst()) {
+            do {
+                int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
+                String title = cursor.getString(cursor.getColumnIndexOrThrow("title"));
+                String content = cursor.getString(cursor.getColumnIndexOrThrow("content"));
+                notes.add(new Note(id, title, content));
+            } while (cursor.moveToNext());
+        }
+
+        cursor.close();
+        return notes;
+    }
+
 }
