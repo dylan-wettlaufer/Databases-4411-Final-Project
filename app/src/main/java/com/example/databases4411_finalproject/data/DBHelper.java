@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
 
 import com.example.databases4411_finalproject.model.Note;
@@ -33,6 +34,10 @@ public class DBHelper extends SQLiteOpenHelper {
                 COL_CONTENT + " TEXT)";
         Log.d("DBHelper", "Creating table: " + createTable);
         db.execSQL(createTable);
+
+        // Indexes for optimized searching
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_notes_title ON " + TABLE_NAME + "(" + COL_TITLE + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_notes_content ON " + TABLE_NAME + "(" + COL_CONTENT + ")");
     }
 
     @Override
@@ -41,6 +46,9 @@ public class DBHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
+    // -----------------------------
+    // INSERT
+    // -----------------------------
     public void insertNote(String title, String content) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -59,6 +67,9 @@ public class DBHelper extends SQLiteOpenHelper {
         db.close();
     }
 
+    // -----------------------------
+    // DELETE
+    // -----------------------------
     public void deleteNote(int id) {
         SQLiteDatabase db = getWritableDatabase();
         int rowsDeleted = db.delete(TABLE_NAME, COL_ID + "=?", new String[]{String.valueOf(id)});
@@ -66,6 +77,9 @@ public class DBHelper extends SQLiteOpenHelper {
         db.close();
     }
 
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
     public void updateNote(int id, String title, String content) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -74,6 +88,10 @@ public class DBHelper extends SQLiteOpenHelper {
         db.update(TABLE_NAME, values, COL_ID + "=?", new String[]{String.valueOf(id)});
         db.close();
     }
+
+    // -----------------------------
+    // GET ONE NOTE
+    // -----------------------------
     public Note getNoteById(int id) {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.query(TABLE_NAME, null, COL_ID + "=?",
@@ -91,6 +109,9 @@ public class DBHelper extends SQLiteOpenHelper {
         return note;
     }
 
+    // -----------------------------
+    // GET ALL NOTES
+    // -----------------------------
     public List<Note> getAllNotes() {
         List<Note> list = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -102,37 +123,121 @@ public class DBHelper extends SQLiteOpenHelper {
             int id = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID));
             String title = cursor.getString(cursor.getColumnIndexOrThrow(COL_TITLE));
             String content = cursor.getString(cursor.getColumnIndexOrThrow(COL_CONTENT));
-
-            Log.d("DBHelper", "Retrieved note - ID: " + id + ", Title: " + title + ", Content: " + content);
             list.add(new Note(id, title, content));
         }
+
         cursor.close();
         db.close();
-
-        Log.d("DBHelper", "Returning " + list.size() + " notes");
         return list;
     }
 
-    public List<Note> searchNotes(String query) {
+    // -----------------------------
+    // SLOW SEARCH (FULL SCAN)
+    // -----------------------------
+    public List<Note> searchSlow(String query) {
         List<Note> notes = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
 
+        // Forces full table scan (slow)
         Cursor cursor = db.rawQuery(
-                "SELECT * FROM notes WHERE title LIKE ? OR content LIKE ?",
-                new String[]{"%" + query + "%", "%" + query + "%"}
+                "SELECT * FROM " + TABLE_NAME +
+                        " WHERE " + COL_TITLE + " LIKE '%" + query + "%' OR " +
+                        COL_CONTENT + " LIKE '%" + query + "%'",
+                null
         );
 
-        if (cursor.moveToFirst()) {
-            do {
-                int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
-                String title = cursor.getString(cursor.getColumnIndexOrThrow("title"));
-                String content = cursor.getString(cursor.getColumnIndexOrThrow("content"));
-                notes.add(new Note(id, title, content));
-            } while (cursor.moveToNext());
+        while (cursor.moveToNext()) {
+            int id = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID));
+            String title = cursor.getString(cursor.getColumnIndexOrThrow(COL_TITLE));
+            String content = cursor.getString(cursor.getColumnIndexOrThrow(COL_CONTENT));
+            notes.add(new Note(id, title, content));
         }
 
         cursor.close();
         return notes;
     }
+
+    // -----------------------------
+    // FAST SEARCH (INDEXED PREFIX MATCH)
+    // -----------------------------
+    public List<Note> searchFast(String query) {
+        List<Note> notes = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        // Allows SQLite to use indexes: query%
+        Cursor cursor = db.rawQuery(
+                "SELECT * FROM " + TABLE_NAME +
+                        " WHERE " + COL_TITLE + " LIKE ? || '%' OR " +
+                        COL_CONTENT + " LIKE ? || '%'",
+                new String[]{query, query}
+        );
+
+        while (cursor.moveToNext()) {
+            int id = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID));
+            String title = cursor.getString(cursor.getColumnIndexOrThrow(COL_TITLE));
+            String content = cursor.getString(cursor.getColumnIndexOrThrow(COL_CONTENT));
+            notes.add(new Note(id, title, content));
+        }
+
+        cursor.close();
+        return notes;
+    }
+
+    // -----------------------------
+    // EXPLAIN QUERY PLAN
+    // -----------------------------
+    public void explainQueryPlan(String sql, String[] args) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor c = db.rawQuery("EXPLAIN QUERY PLAN " + sql, args);
+
+        while (c.moveToNext()) {
+            Log.d("QUERY_PLAN", c.getString(3));
+        }
+        c.close();
+    }
+
+    // -----------------------------
+    // TIMING TOOL
+    // -----------------------------
+    public long timeQuery(Runnable r) {
+        long start = System.nanoTime();
+        r.run();
+        return System.nanoTime() - start;
+    }
+
+    public void generateTestData(int count) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.beginTransaction();
+
+        try {
+            String sql = "INSERT INTO " + TABLE_NAME + " (" + COL_TITLE + ", " + COL_CONTENT + ") VALUES (?, ?)";
+            SQLiteStatement stmt = db.compileStatement(sql);
+
+            for (int i = 0; i < count; i++) {
+                stmt.clearBindings();
+                stmt.bindString(1, "Title " + i);
+                stmt.bindString(2, "This is the content of note " + i);
+                stmt.executeInsert();
+
+                if (i % 5000 == 0) {
+                    Log.d("DBTest", "Inserted: " + i);
+                }
+            }
+
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+
+        db.close();
+        Log.d("DBTest", "Finished inserting " + count + " records");
+    }
+
+    public void clearDatabase() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL("DELETE FROM " + TABLE_NAME);
+        db.close();
+    }
+
 
 }
