@@ -167,11 +167,10 @@ public class DBHelper extends SQLiteOpenHelper {
         // Allows SQLite to use indexes: query%
         Cursor cursor = db.rawQuery(
                 "SELECT * FROM " + TABLE_NAME +
-                        " WHERE " + COL_TITLE + " LIKE '%' || ? || '%' OR " +
-                        COL_CONTENT + " LIKE '%' || ? || '%'",
+                        " WHERE " + COL_TITLE + " LIKE ? || '%' OR " +
+                        COL_CONTENT + " LIKE ? || '%'",
                 new String[]{query, query}
         );
-
 
         while (cursor.moveToNext()) {
             int id = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID));
