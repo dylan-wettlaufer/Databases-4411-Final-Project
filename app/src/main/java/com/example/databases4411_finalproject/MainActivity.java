@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
                     loadNotes();
                 } else {
                     notes.clear();
-                    notes.addAll(dbHelper.searchFast(q));  // Using FAST search
+                    notes.addAll(dbHelper.searchSlow(q));  // Using SLOW search
                     adapter.notifyDataSetChanged();
                 }
             }
