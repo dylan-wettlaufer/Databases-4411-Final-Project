@@ -205,7 +205,9 @@ public class DBHelper extends SQLiteOpenHelper {
         return System.nanoTime() - start;
     }
 
-    public void generateTestData(int count) {
+    public long generateTestData(int count) {
+        long startTime = System.nanoTime();
+
         SQLiteDatabase db = this.getWritableDatabase();
         db.beginTransaction();
 
@@ -230,7 +232,12 @@ public class DBHelper extends SQLiteOpenHelper {
         }
 
         db.close();
+
+        long endTime = System.nanoTime();
+        long durationMs = (endTime - startTime) / 1_000_000;
+
         Log.d("DBTest", "Finished inserting " + count + " records");
+        return durationMs;  // return the duration
     }
 
     public void clearDatabase() {
@@ -238,6 +245,7 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL("DELETE FROM " + TABLE_NAME);
         db.close();
     }
+
 
 
 }

@@ -18,32 +18,32 @@ import java.util.Vector;
 
 public class NoteEditorActivity extends AppCompatActivity {
 
-    EditText etTitle, etContent;
+    EditText etTitle, etContent; // input fields for title and context
     Button btnSave;
     DBHelper dbHelper;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) { // initial set up
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
 
         dbHelper = new DBHelper(this);
 
-        etTitle = findViewById(R.id.etTitle);
+        etTitle = findViewById(R.id.etTitle); // find the ui elements with id
         etContent = findViewById(R.id.etContent);
         btnSave = findViewById(R.id.btnSave);
 
         btnSave = findViewById(R.id.btnSave);
 
         Intent intent = getIntent();
-        boolean name = intent.hasExtra("noteIdToCheck");
-        int noteId = intent.getIntExtra("noteIdToCheck", -1);
+        boolean name = intent.hasExtra("noteIdToCheck"); // checks if note id was passed
+        int noteId = intent.getIntExtra("noteIdToCheck", -1); // gets the id or defaults to -1
 
-        if (noteId != -1 && name) {
+        if (noteId != -1 && name) { // if the note is to be edited
             Note note = dbHelper.getNoteById(noteId);
             if (note != null) {
-                etTitle.setText(note.getTitle());
-                etContent.setText(note.getContent());
+                etTitle.setText(note.getTitle()); // set title
+                etContent.setText(note.getContent()); // set content
             }
         }
 
@@ -59,7 +59,7 @@ public class NoteEditorActivity extends AppCompatActivity {
                 Log.d("NoteEditor", "Title empty: " + title.isEmpty());
                 Log.d("NoteEditor", "Content empty: " + content.isEmpty());
 
-                if (!title.isEmpty() && !content.isEmpty()) {
+                if (!title.isEmpty() && !content.isEmpty()) { // validate input
                     List<Note> allNotes = dbHelper.getAllNotes();
                     for (Note existingNote : allNotes) {
                         if (existingNote.getTitle().equals(title) && existingNote.getId() != noteId) {
@@ -69,9 +69,9 @@ public class NoteEditorActivity extends AppCompatActivity {
                     }
 
                     Log.d("NoteEditor", "Inserting note into database...");
-                    if (noteId != -1) {
+                    if (noteId != -1) { // update note
                         dbHelper.updateNote(noteId, title,content);
-                    } else {
+                    } else { // insert note
                         dbHelper.insertNote(title, content);
                     }
                     Log.d("NoteEditor", "Note inserted successfully");

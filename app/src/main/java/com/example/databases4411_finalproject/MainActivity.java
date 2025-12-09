@@ -10,6 +10,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -38,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         dbHelper = new DBHelper(this);
+
         recyclerView = findViewById(R.id.recyclerView);
         btnAddNote = findViewById(R.id.btnAddNote);
         btnTest = findViewById(R.id.btnTest); // NEW
@@ -92,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
             // Time fast search
             long fastTime = dbHelper.timeQuery(() -> dbHelper.searchFast(testQuery));
 
+
             // Log results
             Log.d("BENCHMARK", "Slow Search Time: " + (slowTime / 1_000_000) + " ms");
             Log.d("BENCHMARK", "Fast Search Time: " + (fastTime / 1_000_000) + " ms");
@@ -121,25 +124,27 @@ public class MainActivity extends AppCompatActivity {
         Button btnGenerate = findViewById(R.id.btnGenerate);
         Button btnClear = findViewById(R.id.btnClear);
 
+        // delete all notes
         btnClear.setOnClickListener(v -> {
             dbHelper.clearDatabase();
             loadNotes();
             Toast.makeText(MainActivity.this, "All notes deleted!", Toast.LENGTH_SHORT).show();
         });
 
+        // generate notes
         btnGenerate.setOnClickListener(v -> {
             Toast.makeText(MainActivity.this, "Generating 50,000 notes…", Toast.LENGTH_LONG).show();
 
             new Thread(() -> {
-                dbHelper.generateTestData(50000);
+                long generationTime = dbHelper.generateTestData(50000);
 
                 runOnUiThread(() -> {
-                    Toast.makeText(MainActivity.this, "Finished generating 50,000 notes!", Toast.LENGTH_LONG).show();
+                    String message = "Generated 50,000 notes in " + generationTime + " ms";
+                    Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
                     loadNotes();
                 });
             }).start();
         });
-
 
     }
 
